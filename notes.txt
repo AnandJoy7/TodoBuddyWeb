@@ -1,0 +1,73 @@
+// server.js
+
+const express = require('express');
+const sqlite3 = require('sqlite3').verbose();
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+const cors = require('cors');
+
+const app = express();
+const PORT = process.env.PORT || 5000;
+
+app.use(express.json());
+app.use(cors());
+
+// Connect to SQLite database
+const db = new sqlite3.Database('./database.db');
+
+// Create users table if not exists
+db.run(`CREATE TABLE IF NOT EXISTS users (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  email TEXT UNIQUE,
+  username TEXT UNIQUE,
+  password TEXT
+)`);
+
+// User registration endpoint
+app.post('/register', (req, res) => {
+  const { email, username, password } = req.body;
+  // Hash password securely
+  bcrypt.hash(password, 10, (err, hashedPassword) => {
+    if (err) {
+      console.error('Error hashing password:', err);
+      return res.status(500).json({ message: 'Internal server error' });
+    }
+    // Insert user into database
+    db.run('INSERT INTO users (email, username, password) VALUES (?, ?, ?)', [email, username, hashedPassword], (err) => {
+      if (err) {
+        console.error('Error registering user:', err);
+        return res.status(500).json({ message: 'Failed to register user' });
+      }
+      res.status(201).json({ message: 'User registered successfully' });
+    });
+  });
+});
+
+// User login endpoint
+app.post('/login', (req, res) => {
+  const { email, password } = req.body;
+  // Find user by email
+  db.get('SELECT * FROM users WHERE email = ?', [email], (err, user) => {
+    if (err) {
+      console.error('Error finding user:', err);
+      return res.status(500).json({ message: 'Internal server error' });
+    }
+    if (!user) {
+      return res.status(401).json({ message: 'Invalid email or password' });
+    }
+    // Compare passwords
+    bcrypt.compare(password, user.password, (err, result) => {
+      if (err || !result) {
+        console.error('Error comparing passwords:', err);
+        return res.status(401).json({ message: 'Invalid email or password' });
+      }
+      // Generate JWT token
+      const token = jwt.sign({ userId: user.id, email: user.email }, 'your-secret-key');
+      res.json({ message: 'Login successful', token });
+    });
+  });
+});
+
+app.listen(PORT, () => {
+  console.log(`Server is running on http://localhost:${PORT}`);
+});

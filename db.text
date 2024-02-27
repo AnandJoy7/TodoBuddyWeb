@@ -1,0 +1,49 @@
+const sqlite3 = require('sqlite3').verbose();
+let sql;
+
+//connect to DB
+const db = new sqlite3.Database("./test.db", sqlite3.OPEN_READWRITE, (err) => {
+    if (err) return console.error(err.message);
+    });
+
+    // Create table
+sql = 'CREATE TABLE users (id INTEGER PRIMARY KEY,email,username,password)';
+db.run(sql);
+
+//Drop table
+// db.run('DROP TABLE users');
+
+// Insert date into table
+// sql = 'INSERT INTO users (email,username,password) VALUES (?,?,?)';
+// db.run(sql,
+//     ["k.anad548@gmail.com","Joy","anand@123"],
+//     (err) => {
+//         if (err) return console.error(err.message);
+//     }
+// );
+
+//update date
+// sql ='UPDATE users SET first_name = ? WHERE id = ?';
+// db.run(sql,["anand", 1], (err) => {
+//     if (err) return console.error(err.message);
+// });
+
+
+// delete data
+// sql ='DELETE FROM  users  WHERE id = ?';
+// db.run(sql,[2], (err) => {
+//     if (err) return console.error(err.message);
+
+// });
+
+
+//query the date
+sql = 'SELECT * FROM users';
+db.all(sql, [], (err, rows) => {
+    if (err) return console.error(err.message);
+    rows.forEach((row) => {
+
+        console.log(row);
+    });
+});
+
